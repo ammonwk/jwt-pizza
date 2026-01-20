@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   pages: write
@@ -13,10 +14,27 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Create dist directory
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Generate version
         run: |
-          mkdir -p dist
-          echo "Hello GitHub Pages" > dist/index.html
+          VERSION=$(date +'%Y%m%d.%H%M%S')
+          echo "{\"version\": \"$VERSION\"}" > public/version.json
+
+      - name: Build application
+        run: |
+          npm ci
+          npm run build
+
+      - name: Copy index.html to 404.html
+        run: cp dist/index.html dist/404.html
+
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
