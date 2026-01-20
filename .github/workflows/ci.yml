@@ -5,7 +5,14 @@ on:
     branches:
       - main
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Hello GitHub Actions"
+      - name: Create dist directory
+        run: |
+          mkdir -p dist
+          echo "Hello GitHub Pages" > dist/index.html
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
