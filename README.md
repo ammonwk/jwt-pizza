@@ -1,6 +1,7 @@
 # 🍕 JWT Pizza
 
 [![CI Pipeline](https://github.com/ammonwk/jwt-pizza/actions/workflows/ci.yml/badge.svg)](https://github.com/ammonwk/jwt-pizza/actions/workflows/ci.yml)
+![Coverage](https://pizza-factory.cs329.click/api/badge/ammonk/jwtpizzacoverage)
 
 [pizza.ammonkunzler.com](https://pizza.ammonkunzler.com)
 
