@@ -155,6 +155,33 @@ async function setupBasicMocks(page: Page, user: any = mockDinerUser, userFranch
     }
   });
 
+  // User update (PUT /api/user/:id)
+  await page.route(/\/api\/user\/\d+$/, async (route) => {
+    const method = route.request().method();
+    if (method === 'PUT') {
+      const body = route.request().postDataJSON();
+      await route.fulfill({ json: { user: { ...user, ...body }, token: 'test-token-abc' } });
+    } else if (method === 'DELETE') {
+      await route.fulfill({ json: { message: 'user deleted' } });
+    } else {
+      await route.fallback();
+    }
+  });
+
+  // User list (GET /api/user)
+  await page.route(/\/api\/user(\?|$)/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        json: {
+          users: [
+            { id: 3, name: 'Kai Chen', email: 'd@jwt.com', roles: [{ role: 'diner' }] },
+          ],
+          more: false,
+        },
+      });
+    }
+  });
+
   // Docs
   await page.route('*/**/api/docs', async (route) => {
     await route.fulfill({ json: mockDocs });

@@ -1,4 +1,4 @@
-import { PizzaService, Franchise, FranchiseList, Store, OrderHistory, User, Menu, Order, Endpoints, OrderResponse, JWTPayload } from './pizzaService';
+import { PizzaService, Franchise, FranchiseList, Store, OrderHistory, User, UserList, Menu, Order, Endpoints, OrderResponse, JWTPayload } from './pizzaService';
 
 const pizzaServiceUrl = import.meta.env.VITE_PIZZA_SERVICE_URL;
 const pizzaFactoryUrl = import.meta.env.VITE_PIZZA_FACTORY_URL;
@@ -108,6 +108,20 @@ class HttpPizzaService implements PizzaService {
 
   async closeStore(franchise: Franchise, store: Store): Promise<null> {
     return this.callEndpoint(`/api/franchise/${franchise.id}/store/${store.id}`, 'DELETE');
+  }
+
+  async updateUser(updatedUser: User): Promise<User> {
+    const { user, token } = await this.callEndpoint(`/api/user/${updatedUser.id}`, 'PUT', updatedUser);
+    localStorage.setItem('token', token);
+    return Promise.resolve(user);
+  }
+
+  async getUsers(page: number = 0, limit: number = 10, nameFilter: string = '*'): Promise<UserList> {
+    return this.callEndpoint(`/api/user?page=${page}&limit=${limit}&name=${nameFilter}`);
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    return this.callEndpoint(`/api/user/${userId}`, 'DELETE');
   }
 
   async docs(docType: string): Promise<Endpoints> {
