@@ -88,5 +88,5 @@ jobs:
       - name: Push to AWS S3
         run: |
           echo Deploying $version
-          aws s3 cp dist s3://${{ secrets.APP_BUCKET }} --recursive
+          aws s3 sync dist s3://${{ secrets.APP_BUCKET }} --delete
           aws cloudfront create-invalidation --distribution-id ${{ secrets.DISTRIBUTION_ID }} --paths "/*"
