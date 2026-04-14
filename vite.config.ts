@@ -3,13 +3,13 @@ import istanbul from 'vite-plugin-istanbul';
 
 export default defineConfig({
   build: {
-    sourcemap: true,
+    sourcemap: false,
   },
   plugins: [
     istanbul({
       include: ['src/**/*'],
       exclude: ['node_modules'],
-      requireEnv: false,
+      requireEnv: true,
     }),
   ],
 });
