@@ -148,9 +148,69 @@ All attacks executed 2026-04-13 against the production deployment.
 
 ---
 
-## Self attack — [Partner name]
+## Self attack — Scotlyn Turner
 
-_To be filled in by partner._
+Target: `https://pizza.scotlynturner.click`. Attacks executed 2026-04-13 and 2026-04-14.
+
+### Self-Attack 1 — Client-controlled order price
+
+| Item | Result |
+| --- | --- |
+| Date | 2026-04-14 |
+| Target | `pizza.scotlynturner.click` |
+| Classification | Insecure Design |
+| Severity | 3 |
+| Description | Able to use curl commands to successfully order pizza with negative and 0 price. |
+| Images | ![Negative-price order via curl](images/scotlyn-000.png) |
+| Corrections | Removed price from client input and ensured pricing is determined by trusted backend or downstream services. |
+
+### Self-Attack 2 — Adding another user as an admin to a franchise
+
+| Item | Result |
+| --- | --- |
+| Date | 2026-04-14 |
+| Target | `pizza.scotlynturner.click` |
+| Classification | Broken Access Control |
+| Severity | 3 |
+| Description | Added another user as an admin to a franchise. |
+| Images | ![Create franchise with other user as admin](images/scotlyn-001.png) |
+| Corrections | Ensure that only the current user is an admin and is the only admin that can be added to a franchise. |
+
+### Self-Attack 3 — Accessing franchisee-only page via known URL while logged out
+
+| Item | Result |
+| --- | --- |
+| Date | 2026-04-14 |
+| Target | `pizza.scotlynturner.click` |
+| Classification | Broken Access Control |
+| Severity | 1 |
+| Description | Known page url was used to access a page that shouldn't be accessed unless franchisee while logged out. |
+| Images | ![create-store page reachable while logged out](images/scotlyn-002.png) |
+| Corrections | Added admin protections to that page endpoint. |
+
+### Self-Attack 4 — Weak passwords brute-forced with Burp Intruder
+
+| Item | Result |
+| --- | --- |
+| Date | 2026-04-13 |
+| Target | `pizza.scotlynturner.click` |
+| Classification | Identification and Authentication Failures |
+| Severity | 3 |
+| Description | Diner and admin passwords too weak. Easily brute forced credentials. |
+| Images | ![Burp Intruder showing 200 on the `diner` payload](images/scotlyn-003.png) |
+| Corrections | Made password requirements so it's stronger. |
+
+### Self-Attack 5 — Error response leaks stack trace on invalid franchise admin
+
+| Item | Result |
+| --- | --- |
+| Date | 2026-04-14 |
+| Target | `pizza.scotlynturner.click` |
+| Classification | Security Misconfiguration |
+| Severity | 2 |
+| Description | In attempting to add an invalid admin, the error code revealed information about the application. |
+| Images | ![Stack trace exposed in error response](images/scotlyn-004.png) |
+| Corrections | Fixed error response to not include stack. |
 
 ---
 
@@ -314,10 +374,83 @@ All attacks executed 2026-04-14 as a plain registered diner unless noted. Attack
 
 ## Peer attack — [Partner] → Ammon
 
-_To be filled in by partner._
+Target: `https://pizza.ammonkunzler.com`. Attacks executed 2026-04-14.
+
+### Peer-Attack 1 — Accessing franchisee-only page via known URL while logged out
+
+| Item | Result |
+| --- | --- |
+| Date | 2026-04-14 |
+| Target | `pizza.ammonkunzler.com` |
+| Classification | Broken Access Control |
+| Severity | 1 |
+| Description | Known page url was used to access a page that shouldn't be accessed unless franchisee while logged out. |
+| Images | ![create-store page reachable on ammonkunzler.com](images/scotlyn-005.png) |
+
+### Peer-Attack 2 — Adding another user as an admin to a franchise
+
+| Item | Result |
+| --- | --- |
+| Date | 2026-04-14 |
+| Target | `pizza.ammonkunzler.com` |
+| Classification | Security Misconfiguration |
+| Severity | 2 |
+| Description | Added another user as an admin to a franchise. |
+| Images | ![POST /api/franchise with f@jwt.com as admin](images/scotlyn-006.png) |
+
+### Peer-Attack 3 — SQL injection via login form (UNSUCCESSFUL)
+
+| Item | Result |
+| --- | --- |
+| Date | 2026-04-14 |
+| Target | `pizza.ammonkunzler.com` |
+| Classification | Injection |
+| Severity | 0 |
+| Description | Attempted and failed to access user data through sql injection. |
+| Images | ![SELECT * from user typed into password field → 404 unknown user](images/scotlyn-007.png) |
+
+### Peer-Attack 4 — Brute-force login with Burp Intruder
+
+| Item | Result |
+| --- | --- |
+| Date | 2026-04-14 |
+| Target | `pizza.ammonkunzler.com` |
+| Classification | Identification and Authentication Failures |
+| Severity | 1 |
+| Description | Tried to overwhelm the session by attempting login with a lot of wrong passwords. Unclear if it's a website issue or my computer is slow. |
+| Images | ![Burp Intruder, 18 payloads, mostly 404s](images/scotlyn-008.png) |
+
+### Peer-Attack 5 — Client-controlled order price
+
+| Item | Result |
+| --- | --- |
+| Date | 2026-04-14 |
+| Target | `pizza.ammonkunzler.com` |
+| Classification | Insecure Design |
+| Severity | 3 |
+| Description | Able to use curl commands to successfully order pizza with a negative price. |
+| Images | ![curl POST /api/order with price -500](images/scotlyn-009.png) |
 
 ---
 
 ## Combined summary of learnings
 
-_To be written together at wrap-up meeting._
+We walked in with very different mental models, and each of us ended up finding the bug in the other's blind spot.
+
+Ammon focused almost entirely on the backend. His self-attack hardening was server-side work across the board: parameterizing the `updateUser` SQL, adding the missing admin check on `DELETE /api/franchise/:id`, re-fetching menu prices so the client can't set them, stripping stack traces from 5xx responses, adding `helmet`, rate-limiting `/api/auth`, setting a JWT expiry. When he attacked Scotlyn's site, that same mindset carried over: the bugs he turned up were all in the service layer, including the same SQL injection in `updateUser`, a missing admin check on `GET /api/user` that let any diner pull 76 users and their password hashes, and a missing-role check on franchise delete. All server-side. He didn't look at the frontend.
+
+Scotlyn went the other direction. She approached this like a user, not like a developer reading API specs. She brute-forced the login page with Burp Intruder using a common-password wordlist, she probed pages by typing URLs directly into the browser, and the finding she landed on Ammon's site was exactly what that mindset is good at catching: `/franchise-dashboard/create-store` renders for any unauthenticated visitor because the SPA router doesn't gate the route. The backend rejects the real `POST`, but the frontend shows the admin form to anyone who types the URL. That's a real gap, and it's exactly the kind of thing a backend-first mental model doesn't naturally go looking for.
+
+So we ended up with complementary coverage: Ammon found Scotlyn's backend holes, Scotlyn found Ammon's frontend-routing gap. If either of us had only reviewed our own code, we'd both have shipped with holes in whichever layer we care about less. That's a better argument for peer pentesting than anything in the lecture. You stop seeing your own code pretty fast, and a partner with a different default mental model notices what you literally can't.
+
+A few other things from the process:
+
+The `updateUser` SQL injection was the single highest-impact bug we found, and it showed up on both of our sites in the same form. One of us happened to patch it during the self-attack phase, which is a pretty good argument for running self-attacks at all. It's a good reminder that string interpolation into SQL is never fine for now. A single quote in a user-controlled field is the whole attack.
+
+Defense in depth paid off in both directions. Some of Ammon's attacks on Scotlyn (JWT forgery with the class-default secret, mass-assignment on register) were blocked by server-side defenses she had in place. Some of Scotlyn's attacks on Ammon (SQL injection via the login password field, brute force) were blocked by server-side defenses on his. Neither of us wanted to rely on only one layer, and in both directions the second layer is what saved us.
+
+The self-attack and peer-attack phases caught completely different classes of bug. The self-attack phase made us notice things we'd never spot from reading the spec: stack traces in error bodies, source maps in production, CORS wildcards with credentials, `/api/docs` leaking the RDS hostname. Then attacking each other taught us the things we'd never notice on our own. The two phases don't overlap as much as you'd expect.
+
+One smaller thing that made us both laugh: both of our databases had leftover evidence of previous attackers. Scotlyn's franchise list had one literally named `SELECT * FROM users WHERE username = st699;` and another called `"Hacked Franchise"`. Ammon's had dozens of `@pentest.local` users left behind from his own self-attack run. A pentest DB is not a pristine environment, and cleanup is part of the job.
+
+Walking in, we thought we were looking at the same app twice. We ended up looking at very different threat surfaces. The blind-spot thing is what we'll both carry forward. Next time either of us builds something with a frontend and a backend, we'll pair-test both layers, not just the one we naturally think about first.
